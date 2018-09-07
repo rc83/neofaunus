@@ -237,6 +237,60 @@ namespace Faunus {
                 void from_json(const json&) override {}
             }; //!< Hardsphere potential
 
+        /**
+         * @brief Custom pair potential for a coarse grained polyethylene glycol (PEG)
+         * @details The potential is a sum of a Mie potential (generalized Lennard-Jones potential)
+         * and a Gaussian standing for a hydration barrier. Some parameters of the potential are temperature
+         * dependend. More info can be found at <http://doi.org/10.1021/acs.jctc.7b00560>. The parametrization
+         * is valid for temperatures between 290 and 390 K.
+         */
+        struct CustomPeg : public PairPotentialBase {
+            double temperature = 300._K, cutoff = 0.9_nm;
+            double mie_m, mie_n, mie_epsilon, mie_sigma, mie_factor;
+            double gauss_mu, gauss_gamma, gauss_delta;
+
+            inline CustomPeg(const std::string &name="custom_peg") {
+                PairPotentialBase::name = name;
+            }
+            void init_mie() {
+                // computes temperature dependend parameters of the Mie potential
+                mie_m = 54.0 * std::pow(0.9943, temperature);
+                mie_n = 8.0;
+                mie_factor = mie_n/(mie_n-mie_m) * std::pow((mie_n/mie_m), (mie_m/(mie_n-mie_m)));
+                mie_sigma = 1.39e-4_nm * temperature + 0.367_nm;
+                mie_epsilon = 1.372_kJmol;
+            }
+            void init_gauss() {
+                // computes temperature dependend parameters of the Gauss potential
+                gauss_mu = 2.9e-4_nm * temperature + 0.604_nm;
+                gauss_gamma = 0.4841_kJmol;
+                gauss_delta = 0.1064_nm;
+            }
+            void from_json(const json &j) override {
+                temperature = j.value("temperature", 300._K);
+                init_mie();
+                init_gauss();
+            }
+            void to_json(json &j) const override {
+                j = {{"temperature", temperature}};
+            }
+            template<class Tparticle>
+                double operator() (const Tparticle &a, const Tparticle &b, const Point &r) const {
+                    double mie_gauss = 0.0;
+                    double rr = r.norm();
+                    if(rr <= cutoff) {
+                        double mie = mie_factor * mie_epsilon * (std::pow(mie_sigma/rr, mie_n) - std::pow(mie_sigma/rr, mie_m));
+                        double gauss_exp = (rr-gauss_mu)/gauss_delta;
+                        double gauss = gauss_gamma * std::exp(-gauss_exp*gauss_exp);
+                        mie_gauss = mie + gauss;
+                        // behind the Gaussian the potential is zero by the definition
+                        if(rr > gauss_mu && mie_gauss < 0.0)
+                            mie_gauss = 0.0;
+                    }
+                    return mie_gauss;
+                }
+        }; // Custom PEG potential
+
         struct RepulsionR3 : public PairPotentialBase {
             double f=0, s=0, e=0;
             inline RepulsionR3(const std::string &name="repulsionr3") {
@@ -730,6 +784,7 @@ namespace Faunus {
                                     if (it.key()=="hardsphere") _u = HardSphere<T>() = i;
                                     if (it.key()=="lennardjones") _u = LennardJones<T>() = i;
                                     if (it.key()=="repulsionr3") _u = RepulsionR3() = i;
+                                    if (it.key()=="custom_peg") _u = CustomPeg() = i;
                                     if (it.key()=="wca") _u = WeeksChandlerAndersen<T>() = i;
                                     if (it.key()=="pm") _u = Coulomb() + HardSphere<T>() = it.value();
                                     if (it.key()=="pmwca") _u = Coulomb() + WeeksChandlerAndersen<T>() = it.value();
