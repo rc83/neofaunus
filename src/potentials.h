@@ -867,10 +867,11 @@ namespace Faunus {
 #endif
 
         struct BondData {
-            enum Variant {harmonic, fene, yukawa, harmonic_torsion, g96_torsion, periodic_dihedral, none};
+            enum Variant {harmonic, fene, yukawa, harmonic_torsion, g96_torsion, periodic_dihedral, none, exclude_custom_peg};
             Variant type=none;
             std::vector<int> index;
             std::vector<double> k;
+            std::shared_ptr<CustomPeg> excluded_nonbonded = nullptr; // PairPotentialBase if it included functor operator ()
 
             void shift( int offset ) {
                 for ( auto &i : index )
@@ -901,7 +902,6 @@ namespace Faunus {
                                 return zz*k[0]*exp(-d/k[1])/d;
                             else
                                 return 0;
-
                         case BondData::harmonic_torsion:
                         {
                             const auto &ray1 = dist( p[index[0]].pos, p[index[1]].pos );
@@ -909,7 +909,6 @@ namespace Faunus {
                             double angle = acos(ray1.dot(ray2)/ray1.norm()/ray2.norm());
                             return 0.5 * k[0] * (angle - k[1]) * (angle - k[1]);
                         }
-
                         case BondData::g96_torsion:
                         {
                             const auto &ray1 = dist( p[index[0]].pos, p[index[1]].pos );
@@ -917,7 +916,6 @@ namespace Faunus {
                             double cos_angle = ray1.dot(ray2)/ray1.norm()/ray2.norm();
                             return 0.5 * k[0] * (cos_angle - k[1]) * (cos_angle - k[1]);
                         }
-
                         case BondData::periodic_dihedral:
                         {
                             const auto &vec1 = dist( p[index[1]].pos, p[index[0]].pos );
@@ -929,6 +927,8 @@ namespace Faunus {
                             double angle = atan2((norm1.cross(norm2)).dot(vec2)/vec2.norm(), norm1.dot(norm2));
                             return k[0] * (1 + cos(k[1]*angle - k[2]));
                         }
+                        case BondData::exclude_custom_peg:
+                            return -1.0 * (*excluded_nonbonded)(p[index[0]], p[index[1]], dist(p[index[0]].pos, p[index[1]].pos));
                         default: break;
                     }
                     assert(!"not implemented");
@@ -976,6 +976,8 @@ namespace Faunus {
                         { "n", b.k[1] },
                         { "phi", b.k[2] / 1.0_deg }};
                     break;
+                case BondData::exclude_custom_peg:
+                    b.excluded_nonbonded->to_json(j["exclude_custom_peg"]);
                 default: break;
             }
         }
@@ -1046,6 +1048,15 @@ namespace Faunus {
                         b.k[0] = val.at("k").get<double>() * 1.0_kJmol; // k
                         b.k[1] = val.at("n").get<double>(); // multiplicity/periodicity n
                         b.k[2] = val.at("phi").get<double>() * 1.0_deg; // angle
+                        return;
+                    }
+                    if (t=="exclude_custom_peg") {
+                        b.type = BondData::exclude_custom_peg;
+                        b.index = val.at("index").get<decltype(b.index)>();
+                        if (b.index.size()!=2)
+                            throw std::runtime_error("Exclude custom PEG requires exactly two indeces");
+                        b.excluded_nonbonded = std::make_shared<CustomPeg>();
+                        b.excluded_nonbonded->from_json(val);
                         return;
                     }
                     if (b.type==BondData::none)
