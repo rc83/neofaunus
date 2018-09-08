@@ -1,0 +1,84 @@
+comment: |
+    PEG 9mer at 300 K
+
+temperature: 300.0
+random: {seed: default}
+geometry: {length: [200., 200., 200.]}
+mcloop: {macro: 10, micro: 100}
+
+atomlist:
+   - PGM: {sigma: 4.09, eps: 0.0, mw: 44.0, dp: 2.0, tension: 0.0, tfe: 0}
+
+moleculelist:
+    - PEG:
+        structure: "peg.xyz"
+        bondlist:
+            - harmonic: {index: [0,1], k: 170, req: 3.3}
+            - harmonic: {index: [1,2], k: 170, req: 3.3}
+            - harmonic: {index: [2,3], k: 170, req: 3.3}
+            - harmonic: {index: [3,4], k: 170, req: 3.3}
+            - harmonic: {index: [4,5], k: 170, req: 3.3}
+            - harmonic: {index: [5,6], k: 170, req: 3.3}
+            - harmonic: {index: [6,7], k: 170, req: 3.3}
+            - harmonic: {index: [7,8], k: 170, req: 3.3}
+            - exclude_custom_peg: {index: [0,1], temperature: 300.0}
+            - exclude_custom_peg: {index: [1,2], temperature: 300.0}
+            - exclude_custom_peg: {index: [2,3], temperature: 300.0}
+            - exclude_custom_peg: {index: [3,4], temperature: 300.0}
+            - exclude_custom_peg: {index: [4,5], temperature: 300.0}
+            - exclude_custom_peg: {index: [5,6], temperature: 300.0}
+            - exclude_custom_peg: {index: [6,7], temperature: 300.0}
+            - exclude_custom_peg: {index: [7,8], temperature: 300.0}
+            - g96_torsion: {index: [0,1,2], k: 85, aeq: 130.0}
+            - g96_torsion: {index: [1,2,3], k: 85, aeq: 130.0}
+            - g96_torsion: {index: [2,3,4], k: 85, aeq: 130.0}
+            - g96_torsion: {index: [3,4,5], k: 85, aeq: 130.0}
+            - g96_torsion: {index: [4,5,6], k: 85, aeq: 130.0}
+            - g96_torsion: {index: [5,6,7], k: 85, aeq: 130.0}
+            - g96_torsion: {index: [6,7,8], k: 85, aeq: 130.0}
+            - periodic_dihedral: {index: [0,1,2,3], k: 1.96, n: 1, phi: 180.0}
+            - periodic_dihedral: {index: [0,1,2,3], k: 0.18, n: 2, phi:   0.0}
+            - periodic_dihedral: {index: [0,1,2,3], k: 0.33, n: 3, phi:   0.0}
+            - periodic_dihedral: {index: [0,1,2,3], k: 0.12, n: 4, phi:   0.0}
+            - periodic_dihedral: {index: [1,2,3,4], k: 1.96, n: 1, phi: 180.0}
+            - periodic_dihedral: {index: [1,2,3,4], k: 0.18, n: 2, phi:   0.0}
+            - periodic_dihedral: {index: [1,2,3,4], k: 0.33, n: 3, phi:   0.0}
+            - periodic_dihedral: {index: [1,2,3,4], k: 0.12, n: 4, phi:   0.0}
+            - periodic_dihedral: {index: [2,3,4,5], k: 1.96, n: 1, phi: 180.0}
+            - periodic_dihedral: {index: [2,3,4,5], k: 0.18, n: 2, phi:   0.0}
+            - periodic_dihedral: {index: [2,3,4,5], k: 0.33, n: 3, phi:   0.0}
+            - periodic_dihedral: {index: [2,3,4,5], k: 0.12, n: 4, phi:   0.0}
+            - periodic_dihedral: {index: [3,4,5,6], k: 1.96, n: 1, phi: 180.0}
+            - periodic_dihedral: {index: [3,4,5,6], k: 0.18, n: 2, phi:   0.0}
+            - periodic_dihedral: {index: [3,4,5,6], k: 0.33, n: 3, phi:   0.0}
+            - periodic_dihedral: {index: [3,4,5,6], k: 0.12, n: 4, phi:   0.0}
+            - periodic_dihedral: {index: [4,5,6,7], k: 1.96, n: 1, phi: 180.0}
+            - periodic_dihedral: {index: [4,5,6,7], k: 0.18, n: 2, phi:   0.0}
+            - periodic_dihedral: {index: [4,5,6,7], k: 0.33, n: 3, phi:   0.0}
+            - periodic_dihedral: {index: [4,5,6,7], k: 0.12, n: 4, phi:   0.0}
+            - periodic_dihedral: {index: [5,6,7,8], k: 1.96, n: 1, phi: 180.0}
+            - periodic_dihedral: {index: [5,6,7,8], k: 0.18, n: 2, phi:   0.0}
+            - periodic_dihedral: {index: [5,6,7,8], k: 0.33, n: 3, phi:   0.0}
+            - periodic_dihedral: {index: [5,6,7,8], k: 0.12, n: 4, phi:   0.0}
+
+insertmolecules:
+    - PEG: {N: 1}
+
+energy:
+    - isobaric: {P/atm: 0}
+    - bonded: {}
+    - nonbonded:
+        default:
+        - custom_peg: {temperature: 300.0}
+#        - lennardjones: {mixing: LB}
+
+moves:
+#    - moltransrot: {molecule: PEG, dp: 1.0, dprot: 0.5, repeat: 100}
+    - transrot: {molecule: PEG, repeat: 100}
+    - pivot: {molecule: PEG, dprot: 0.5, repat: 100}
+
+analysis:
+    - polymershape: {nstep: 10, molecules: [PEG]}
+    - xtcfile: {file: peg.xtc, nstep: 10}
+    - systemenergy: {file: peg.energy.dat, nstep: 10}
+    - savestate: {file: peg.state.json}
